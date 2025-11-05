@@ -42,19 +42,19 @@ void loop() {
     // Modo solar: batería cargada
     setSolar(true);
     setBateria(false);
-    Serial.println("Fuente activa: Solar ☀️");
+    Serial.println("Fuente activa: Solar ");
   } 
   else if (Vbat < Vmin) {
     // Modo batería: poca carga
     setSolar(false);
     setBateria(true);
-    Serial.println("Fuente activa: Batería 🔋");
+    Serial.println("Fuente activa: Batería ");
   } 
   else {
     // Zona intermedia: mantener batería como predeterminado
     setSolar(false);
     setBateria(true);
-    Serial.println("Fuente activa: Batería (zona neutra) ⚡");
+    Serial.println("Fuente activa: Batería (zona neutra) ");
   }
 
   delay(1000);
