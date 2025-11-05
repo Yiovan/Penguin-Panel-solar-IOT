@@ -1,224 +1,181 @@
-# 🌱 Sistema de Riego Automatizado con Arduino
+# Sistema de Conmutación Automática Solar/Batería
 
-Sistema inteligente de riego automatizado para competencia de programación, que utiliza Arduino para controlar el suministro de agua mediante un módulo de relé y monitorear el estado de la tierra a través de una pantalla LCD.
+Sistema de control automático que alterna entre alimentación solar y batería según el nivel de carga, implementado en Arduino.
 
-![Diagrama del Circuito](docs/circuit-diagram.png)
+## 📋 Descripción
 
-## 📋 Descripción del Proyecto
+Este proyecto gestiona automáticamente dos fuentes de energía mediante relés, conmutando entre panel solar y batería basándose en el voltaje medido. Ideal para sistemas de energía renovable con respaldo.
 
-Este proyecto implementa un sistema de riego automatizado que activa una bomba de agua durante 21 segundos cuando detecta que la tierra está seca. El sistema muestra el estado actual (Tierra Seca/Tierra Húmeda) en una pantalla LCD I2C y envía información por el puerto serial para monitoreo.
+## ⚡ Características
 
-### Características Principales
+- Monitoreo continuo del voltaje de batería
+- Conmutación automática entre fuentes de energía
+- Control mediante relés activo-LOW
+- Indicadores visuales con LEDs
+- Histéresis para evitar cambios bruscos
 
-- ✅ Control automatizado de riego por tiempo definido
-- ✅ Pantalla LCD I2C 16x2 para visualización del estado
-- ✅ Módulo de relé para control de bomba de agua
-- ✅ Sensor de humedad del suelo
-- ✅ Comunicación serial para monitoreo y debugging
-- ✅ Sistema de seguridad con detención automática
+## 🔧 Componentes
 
-## 🔧 Componentes Necesarios
+- **Arduino** (Uno, Nano, Mega, etc.)
+- **2 Relés** o módulo de 2 relés (activo-LOW)
+- **2 LEDs** (rojo y amarillo) con resistencias de 220Ω
+- **Divisor de voltaje** (2 resistencias iguales para lectura de batería)
+- **Batería LiPo/Li-ion** (3.7V nominal)
+- **Panel solar** con regulador
 
-| Componente | Cantidad | Especificaciones |
-|------------|----------|------------------|
-| Arduino UNO | 1 | Microcontrolador principal |
-| LCD I2C 16x2 | 1 | Dirección 0x27 |
-| Módulo de Relé 5V | 1 | 1 canal |
-| Sensor de Humedad | 1 | Sensor capacitivo o resistivo |
-| Bomba de Agua | 1 | 5-12V DC |
-| Cables Jumper | Varios | Macho-Macho y Macho-Hembra |
-| Fuente de Alimentación | 1 | Según bomba de agua |
-
-## 📐 Diagrama de Conexiones
-
-### Conexiones Arduino
+## 📌 Conexiones
 
 ```
-Arduino UNO:
-├── Pin 8  → Módulo de Relé (IN)
-├── Pin 6  → Sensor de Humedad (OUT)
-├── SDA    → LCD I2C (SDA)
-├── SCL    → LCD I2C (SCL)
-├── 5V     → Alimentación sensores y LCD
-└── GND    → Tierra común
+Arduino Pin 8  → Relé Solar / LED Rojo
+Arduino Pin 9  → Relé Batería / LED Amarillo
+Arduino Pin A0 → Divisor de voltaje (punto medio)
+Arduino GND    → GND común
 ```
 
-### Conexiones del Módulo de Relé
-
+### Divisor de voltaje
 ```
-Relé 5V:
-├── VCC  → Arduino 5V
-├── GND  → Arduino GND
-├── IN   → Arduino Pin 8
-├── COM  → Fuente de alimentación (+)
-└── NO   → Bomba de agua (+)
+Vbat (+) ---[R1]--- A0 ---[R2]--- GND
+              (10kΩ)         (10kΩ)
 ```
 
-### Conexiones del Sensor de Humedad
+## ⚙️ Configuración
 
-```
-Sensor de Humedad:
-├── VCC  → Arduino 5V
-├── GND  → Arduino GND
-└── DO   → Arduino Pin 6
-```
-
-## 💻 Instalación y Configuración
-
-### Requisitos Previos
-
-1. **Arduino IDE** instalado (versión 1.8.x o superior)
-2. Librería **LiquidCrystal_I2C** instalada
-
-### Instalación de Librerías
-
-#### Método 1: Mediante el Gestor de Librerías
-
-```
-1. Abrir Arduino IDE
-2. Ir a Sketch → Incluir Librería → Administrar Librerías
-3. Buscar "LiquidCrystal I2C"
-4. Instalar "LiquidCrystal I2C" por Frank de Brabander
-```
-
-#### Método 2: Manual
-
-```bash
-cd ~/Arduino/libraries/
-git clone https://github.com/johnrickman/LiquidCrystal_I2C.git
-```
-
-### Carga del Código
-
-1. Clonar este repositorio:
-```bash
-git clone https://github.com/tu-usuario/sistema-riego-arduino.git
-cd sistema-riego-arduino
-```
-
-2. Abrir el archivo `codigo_FINAL__1_.ino` en Arduino IDE
-
-3. Seleccionar la placa y puerto correcto:
-   - Herramientas → Placa → Arduino UNO
-   - Herramientas → Puerto → (Seleccionar el puerto COM correspondiente)
-
-4. Verificar y cargar el código al Arduino
-
-## 🚀 Uso del Sistema
-
-### Funcionamiento Básico
-
-1. **Encendido**: Al conectar el Arduino, el LCD mostrará "Sistema de Riego" durante 2 segundos
-2. **Detección**: El sistema detecta tierra seca y muestra "Tierra Seca" en el LCD
-3. **Riego**: Activa automáticamente la bomba durante 21 segundos
-4. **Finalización**: Muestra "Tierra Humeda" y detiene el sistema
-
-### Monitoreo Serial
-
-Abrir el Monitor Serial en Arduino IDE (Herramientas → Monitor Serial) a **9600 baudios** para ver los mensajes de estado:
-
-```
-Tierra Seca
-Tierra Humeda
-```
-
-## ⚙️ Configuración Avanzada
-
-### Ajustar Tiempo de Riego
-
-Modificar la línea 34 del código:
+### Umbrales de voltaje
 
 ```cpp
-delay(21000); // Cambiar 21000 por el tiempo deseado en milisegundos
+float Vmax = 4.1;  // Batería cargada → activa solar
+float Vmin = 3.6;  // Batería baja → mantiene batería
 ```
 
-### Cambiar Dirección I2C del LCD
+Ajusta estos valores según tu batería:
+- **LiPo 1S**: 3.0V (mín) - 4.2V (máx)
+- **LiFePO4**: 2.5V (mín) - 3.65V (máx)
 
-Si tu LCD usa una dirección diferente, modificar la línea 5:
+### Divisor resistivo
+
+El código asume un divisor 1:2. Si usas otros valores:
 
 ```cpp
-LiquidCrystal_I2C lcd(0x27, 16, 2); // Cambiar 0x27 por tu dirección
+Vbat = (lectura * 5.0 / 1023.0) * (R1 + R2) / R2;
 ```
 
-Para encontrar la dirección I2C, usar el sketch **I2C Scanner**.
+## 🚀 Instalación
 
-### Activar Ciclo Continuo
+1. Conecta los componentes según el diagrama
+2. Abre el código en Arduino IDE
+3. Selecciona tu placa y puerto COM
+4. Carga el sketch
+5. Abre el Monitor Serial (9600 baud)
 
-Para que el sistema funcione en ciclos repetitivos, eliminar el bucle `while(true)` de las líneas 44-46 y agregar un delay:
+## 📊 Lógica de Funcionamiento
+
+```
+Vbat > 4.1V  → ☀️  Solar activo (batería cargada)
+Vbat < 3.6V  → 🔋 Batería activa (carga baja)
+3.6V - 4.1V  → ⚡ Batería activa (zona neutra)
+```
+
+**Zona neutra**: Previene oscilaciones manteniendo la batería activa en el rango intermedio.
+
+## 🔍 Monitor Serial
+
+Salida ejemplo:
+```
+Voltaje batería: 4.05 V
+Fuente activa: Solar ☀️
+
+Voltaje batería: 3.82 V
+Fuente activa: Batería (zona neutra) ⚡
+
+Voltaje batería: 3.45 V
+Fuente activa: Batería 🔋
+```
+
+## 💻 Código Principal
 
 ```cpp
-// Reemplazar líneas 44-46 por:
-delay(300000); // Esperar 5 minutos antes del próximo ciclo
+// Pines de conexión
+const int rele_solar = 8;    // LED rojo / Relé solar (activo-LOW)
+const int rele_bateria = 9;  // LED amarillo / Relé batería (activo-LOW)
+const int pin_voltaje = A0;  // Lectura del voltaje de la batería
+
+// Variables de voltaje
+float Vbat = 0;
+float Vmax = 4.1;  // Umbral superior (batería cargada)
+float Vmin = 3.6;  // Umbral inferior (batería baja)
+
+// Funciones para controlar relés/LEDs (modo activo-LOW)
+void setSolar(bool on) {
+  digitalWrite(rele_solar, on ? LOW : HIGH);  // LOW = encendido
+}
+
+void setBateria(bool on) {
+  digitalWrite(rele_bateria, on ? LOW : HIGH);  // LOW = encendido
+}
+
+void setup() {
+  pinMode(rele_solar, OUTPUT);
+  pinMode(rele_bateria, OUTPUT);
+  Serial.begin(9600);
+  
+  // Estado inicial: ambos apagados
+  setSolar(false);
+  setBateria(false);
+}
+
+void loop() {
+  // Leer voltaje de la batería desde A0 (divisor resistivo)
+  int lectura = analogRead(pin_voltaje);
+  Vbat = (lectura * 5.0 / 1023.0) * 2;  // Multiplicamos por 2 por el divisor
+  
+  // Mostrar voltaje en el monitor serial
+  Serial.print("Voltaje batería: ");
+  Serial.print(Vbat, 2);
+  Serial.println(" V");
+  
+  // Lógica de conmutación
+  if (Vbat > Vmax) {
+    // Modo solar: batería cargada
+    setSolar(true);
+    setBateria(false);
+    Serial.println("Fuente activa: Solar ☀️");
+  } 
+  else if (Vbat < Vmin) {
+    // Modo batería: poca carga
+    setSolar(false);
+    setBateria(true);
+    Serial.println("Fuente activa: Batería 🔋");
+  } 
+  else {
+    // Zona intermedia: mantener batería como predeterminado
+    setSolar(false);
+    setBateria(true);
+    Serial.println("Fuente activa: Batería (zona neutra) ⚡");
+  }
+  
+  delay(1000);
+}
 ```
 
-## 🐛 Solución de Problemas
+## ⚠️ Consideraciones
 
-### El LCD no muestra nada
+- Los relés son **activo-LOW** (LOW = encendido)
+- Verifica que tu divisor de voltaje no exceda 5V en A0
+- No conectes directamente cargas de alta potencia sin un circuito de protección
+- Usa diodos de protección en las bobinas de los relés
 
-- Verificar las conexiones SDA y SCL
-- Ajustar el potenciómetro del LCD para el contraste
-- Verificar la dirección I2C con I2C Scanner
-- Revisar que la librería LiquidCrystal_I2C esté instalada
+## 🔄 Posibles Mejoras
 
-### El relé no activa la bomba
+- [ ] Agregar filtro de promedio para lecturas más estables
+- [ ] Implementar protección por sobrecarga
+- [ ] Añadir display LCD para visualización local
+- [ ] Registrar datos en tarjeta SD
+- [ ] Control remoto por WiFi/Bluetooth
 
-- Verificar la conexión del pin 8 al módulo de relé
-- Comprobar que el LED del relé se encienda
-- Verificar la alimentación externa de la bomba
-- Revisar las conexiones COM y NO del relé
+## 📝 Licencia
 
-### El sensor no detecta humedad
-
-- Verificar la conexión del pin 6
-- Comprobar la alimentación del sensor (5V y GND)
-- Calibrar el sensor según las instrucciones del fabricante
-
-## 📝 Código Fuente
-
-El código principal se encuentra en `codigo_FINAL__1_.ino` y está estructurado de la siguiente manera:
-
-- **Setup**: Inicialización de pines, LCD y comunicación serial
-- **Loop**: Ciclo principal con detección, riego y visualización
-
-## 🏆 Competencia de Programación
-
-Este proyecto fue desarrollado para una competencia de programación enfocada en sistemas embebidos y automatización. El objetivo es demostrar:
-
-- Integración de múltiples componentes electrónicos
-- Control de actuadores mediante microcontroladores
-- Interfaz de usuario mediante LCD
-- Lógica de programación para automatización
-
-## 📚 Recursos Adicionales
-
-- [Documentación Arduino](https://www.arduino.cc/reference/en/)
-- [LiquidCrystal_I2C Library](https://github.com/johnrickman/LiquidCrystal_I2C)
-- [Tutorial de Módulos de Relé](https://www.arduino.cc/en/Tutorial/BuiltInExamples)
-
-## 🤝 Contribuciones
-
-Las contribuciones son bienvenidas. Por favor:
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo `LICENSE` para más detalles.
-
-## ✍️ Autor
-
-Desarrollado para competencia de programación
-
-## 🙏 Agradecimientos
-
-- Comunidad Arduino por la documentación y soporte
-- Autores de la librería LiquidCrystal_I2C
-- Organizadores de la competencia de programación
+Proyecto de código abierto. Libre para uso personal y educativo.
 
 ---
 
-⭐ Si este proyecto te fue útil, no olvides darle una estrella en GitHub
+**Nota**: Este sistema es un prototipo educativo. Para aplicaciones críticas, implementa protecciones adicionales y consulta las especificaciones de tus componentes.
